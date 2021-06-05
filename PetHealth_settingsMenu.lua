@@ -164,6 +164,17 @@ function PetHealth.buildLAMAddonMenu()
 		    width = "full",
 		    default = defaults.lowShieldAlertSlider,
 		},
+        {
+            type = "checkbox",
+            name = GetString(SI_PET_HEALTH_LAM_COMPANION),
+            tooltip = GetString(SI_PET_HEALTH_LAM_COMPANION_TT),
+            getFunc = function() return settings.showCompanion end,
+            setFunc = function(value) settings.showCompanion = value
+                PetHealth.changeCompanion(value)
+            end,
+            default = defaults.showCompanion,
+            width="full",
+        },
         --==============================================================================
         {
             type = 'header',

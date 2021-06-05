@@ -36,9 +36,11 @@ local default = {
 	showBackground = true,
 	useZosStyle = false,
 	debug = false,
+	showCompanion = true,
 }
 
 local UNIT_PLAYER_PET = "playerpet"
+local UNIT_COMPANION = "companion"
 local UNIT_PLAYER_TAG = "player"
 
 local base, background, savedVars--, savedVarCopy
@@ -59,14 +61,17 @@ local onlyInCombatHealthCurrent = 0
 local onlyInCombatHealthPercentage = 0
 local onScreenHealthAlertPetOne = 0
 local onScreenHealthAlertPetTwo = 0
+local onScreenHealthAlertPetThree = 0
 local onScreenShieldAlertPetOne = 0
 local onScreenShieldAlertPetTwo = 0
+local onScreenShieldAlertPetThree = 0
 local unsummonedAlerts = false
 
 local WINDOW_MANAGER = GetWindowManager()
 local WINDOW_WIDTH = 250
 local WINDOW_HEIGHT_ONE = 76
 local WINDOW_HEIGHT_TWO = 116
+local WINDOW_HEIGHT_THREE = 156
 local PET_BAR_FRAGMENT
 
 ----------
@@ -167,13 +172,11 @@ local function IsUnitValidPet(unitTag)
 	]]
 	local unitName = zo_strformat("<<z:1>>", GetUnitName(unitTag))
 	--zo_callLater(function() ChatOutput(unitName) end, 10000)
+
 	return DoesUnitExist(unitTag) and validPets[unitName]
 end
 
 local function GetKeyWithData(unitTag)
-	--[[
-	Wir suchen nach dem table key.
-	]]
 	for k, v in pairs(currentPets) do
 		if v.unitTag == unitTag then return k end
 	end
@@ -205,8 +208,8 @@ local function PetUnSummonedAlerts(unitTag)
 			return
 		end
 		local petName = currentPets[i].unitName
-		local swimming = IsUnitSwimming("player")
-		local inCombat = IsUnitInCombat("player")
+		local swimming = IsUnitSwimming(UNIT_PLAYER_TAG)
+		local inCombat = IsUnitInCombat(UNIT_PLAYER_TAG)
 		if swimming then
 			OnScreenMessage(string.format(GetString(SI_PET_HEALTH_UNSUMMONED_SWIMMING_MSG)))
 		elseif inCombat then
@@ -228,17 +231,24 @@ local function RefreshPetWindow()
 	local height = 0
 	local setToHidden = true
 	if countPets > 0 then
-		if countPets == 1 then
-			height = WINDOW_HEIGHT_ONE
-			window[1]:SetHidden(false)
-			window[2]:SetHidden(true)
-			setToHidden = false
-		else
-			height = WINDOW_HEIGHT_TWO
-			window[1]:SetHidden(false)
-			window[2]:SetHidden(false)
-			setToHidden = false			
-		end
+        for i=1, #window do
+            if i > countPets then
+              window[i]:SetHidden(true)
+            else 
+              window[i]:SetHidden(false)
+            end
+        end
+     
+
+        if countPets == 1 then
+            height = WINDOW_HEIGHT_ONE
+        elseif countPets == 2 then
+            height = WINDOW_HEIGHT_TWO
+        elseif countPets == 3 then
+            height = WINDOW_HEIGHT_THREE            
+        end      
+
+        setToHidden = false   
 	end	
 	if not combatState and savedVars.onlyInCombat == true then
 		if onlyInCombatHealthPercentage == 0 then
@@ -248,11 +258,11 @@ local function RefreshPetWindow()
 		end
 	end
 	if savedVars.hideInDungeon == true then
-		local inDungeon = IsUnitInDungeon("player")
+		local inDungeon = IsUnitInDungeon(UNIT_PLAYER_TAG)
 		local zoneDifficulty = GetCurrentZoneDungeonDifficulty()
 		--zoneDifficulty 0 is for all overland/non-dungeon content, 1 = normal dungeon/arena/trial, 2 = veteran dungeon/arena/trial
 		if inDungeon == true and zoneDifficulty > 0 then
-			local currentZone = GetUnitZone("player")
+			local currentZone = GetUnitZone(UNIT_PLAYER_TAG)
 			if currentZone ~= 'Maelstrom Arena' then
 				setToHidden = true
 			end
@@ -270,14 +280,13 @@ end
 -- SHIELD --
 ------------
 local function OnShieldUpdate(handler, unitTag, value, maxValue, initial)
-	--[[
-	Zeigt das Schadenschild des Begleiters an.
-	]]
-	local i = GetKeyWithData(unitTag)
-	if i == nil then
-		--ChatOutput(string.format("OnShieldUpdate() unitTag: %s - pet not active", unitTag))
+    local i = GetKeyWithData(unitTag)
+
+    if i == nil or i > #window then
 		return
-	elseif i == 1 then
+    end
+
+	if i == 1 then
 		local petOne = currentPets[1].unitName
 		if lowShieldAlertPercentage > 1 and value ~= 0 and value < (maxValue*.01*lowShieldAlertPercentage) then
 			if onScreenShieldAlertPetOne == 0 then
@@ -287,7 +296,7 @@ local function OnShieldUpdate(handler, unitTag, value, maxValue, initial)
 		else
 			onScreenShieldAlertPetOne = 0
 		end
-	else 
+	elseif i == 2 then
 		local name = currentPets[i].unitName
 		local petOne = currentPets[1].unitName
 		local petTwo = currentPets[2].unitName
@@ -306,6 +315,31 @@ local function OnShieldUpdate(handler, unitTag, value, maxValue, initial)
 				onScreenShieldAlertPetTwo = 0
 			end
 		end
+    elseif i == 3 then
+        local name = currentPets[i].unitName
+        local petOne = currentPets[1].unitName
+        local petTwo = currentPets[2].unitName
+        local petThree = currentPets[3].unitName
+        if lowShieldAlertPercentage > 1 and value ~= 0 and value < (maxValue*.01*lowShieldAlertPercentage) then
+            if name == petOne and onScreenShieldAlertPetOne == 0 then
+                OnScreenMessage(zo_strformat("|c000099<<1>>\'s <<2>>|r", petOne, GetString(SI_PET_HEALTH_LOW_SHIELD_WARNING_MSG)))
+                onScreenShieldAlertPetOne = 1
+            elseif name == petTwo and onScreenShieldAlertPetTwo == 0 then
+                OnScreenMessage(zo_strformat("|c000099<<1>>\'s <<2>>|r", petTwo, GetString(SI_PET_HEALTH_LOW_SHIELD_WARNING_MSG)))
+                onScreenShieldAlertPetTwo = 1
+            elseif name == petThree and onScreenShieldAlertPetThree == 0 then
+                OnScreenMessage(zo_strformat("|c000099<<1>>\'s <<2>>|r", petThree, GetString(SI_PET_HEALTH_LOW_SHIELD_WARNING_MSG)))
+                onScreenShieldAlertPetThree = 1
+            end
+        else
+            if name == petOne then
+                onScreenShieldAlertPetOne = 0
+            elseif name == petTwo then
+                onScreenShieldAlertPetTwo = 0
+            elseif name == petThree then
+                onScreenShieldAlertPetThree = 0
+            end
+        end
 	end
 	local ctrl, ctrlr;
 	if (not savedVars.useZosStyle) then
@@ -354,20 +388,27 @@ end
 ------------
 -- HEALTH --
 ------------
-local function OnHealthUpdate(_, unitTag, _, _, powerValue, powerMax, initial)
-	--[[
-	Zeigt das Leben des Begleiters an.
-	]]
+local function OnHealthUpdate(_, unitTag, powerIndex, powerType, powerValue, powerMax, powerEffectiveMax)
+    local i = GetKeyWithData(unitTag)
+
+    if i == nil or i > #window then
+        return
+    end
+
+    if powerIndex == 1 then
+        return
+    end
+
+
+    --d(unitTag .. ", powerIndex: " .. powerIndex .. ", powerType: " .. powerType .. ", powerValue: " .. powerValue .. ", powerMax: " .. powerMax .. ", powerEffectiveMax: " .. powerEffectiveMax)
+
 	if onlyInCombatHealthPercentage > 1 and savedVars.onlyInCombat == true then
 		onlyInCombatHealthMax = powerMax
 		onlyInCombatHealthCurrent = powerValue
 		RefreshPetWindow()
 	end
-	local i = GetKeyWithData(unitTag)
-	if i == nil then
-		--ChatOutput(string.format("OnHealthUpdate() unitTag: %s - pet not active", unitTag))
-		return
-	elseif i == 1 then
+
+	if i == 1 then
 		local petOne = currentPets[1].unitName
 		if lowHealthAlertPercentage > 1 and powerValue ~= 0 and powerValue < (powerMax*.01*lowHealthAlertPercentage) then
 			if onScreenHealthAlertPetOne == 0 then
@@ -377,7 +418,7 @@ local function OnHealthUpdate(_, unitTag, _, _, powerValue, powerMax, initial)
 		else
 			onScreenHealthAlertPetOne = 0
 		end
-	else 
+	elseif i == 2 then
 		local name = currentPets[i].unitName
 		local petOne = currentPets[1].unitName
 		local petTwo = currentPets[2].unitName
@@ -396,6 +437,31 @@ local function OnHealthUpdate(_, unitTag, _, _, powerValue, powerMax, initial)
 				onScreenHealthAlertPetTwo = 0
 			end
 		end
+    elseif i == 3 then
+        local name = currentPets[i].unitName
+        local petOne = currentPets[1].unitName
+        local petTwo = currentPets[2].unitName
+        local petThree = currentPets[3].unitName
+        if lowHealthAlertPercentage > 1 and powerValue ~= 0 and powerValue < (powerMax*.01*lowHealthAlertPercentage) then
+            if name == petOne and onScreenHealthAlertPetOne == 0 then
+                OnScreenMessage(zo_strformat("|cff0000<<1>> <<2>>|r", petOne, GetString(SI_PET_HEALTH_LOW_HEALTH_WARNING_MSG)))
+                onScreenHealthAlertPetOne = 1
+            elseif name == petTwo and onScreenHealthAlertPetTwo == 0 then
+                OnScreenMessage(zo_strformat("|cff0000<<1>> <<2>>|r", petTwo, GetString(SI_PET_HEALTH_LOW_HEALTH_WARNING_MSG)))
+                onScreenHealthAlertPetTwo = 1
+            elseif name == petThree and onScreenHealthAlertPetThree == 0 then
+                OnScreenMessage(zo_strformat("|cff0000<<1>> <<2>>|r", petThree, GetString(SI_PET_HEALTH_LOW_HEALTH_WARNING_MSG)))
+                onScreenHealthAlertPetThree = 1
+            end
+        else
+            if name == petOne then
+                onScreenHealthAlertPetOne = 0
+            elseif name == petTwo then
+                onScreenHealthAlertPetTwo = 0
+            elseif name == petThree then
+                onScreenHealthAlertPetThree = 0
+            end
+        end
 	end
 	-- health values
 	window[i].values:SetText(ZO_FormatResourceBarCurrentAndMax(powerValue, powerMax))
@@ -403,11 +469,11 @@ local function OnHealthUpdate(_, unitTag, _, _, powerValue, powerMax, initial)
 	if (savedVars.useZosStyle) then
 		local halfValue = powerValue / 2
 		local halfMax = powerMax / 2
-		ZO_StatusBar_SmoothTransition(window[i].barleft, halfValue, halfMax, (initial == "true" and true or false))
-		ZO_StatusBar_SmoothTransition(window[i].barright, halfValue, halfMax, (initial == "true" and true or false))
+		ZO_StatusBar_SmoothTransition(window[i].barleft, halfValue, halfMax, (powerEffectiveMax == "true" and true or false))
+		ZO_StatusBar_SmoothTransition(window[i].barright, halfValue, halfMax, (powerEffectiveMax == "true" and true or false))
 		window[i].warner:OnHealthUpdate(powerValue, powerMax);
 	else
-		ZO_StatusBar_SmoothTransition(window[i].healthbar, powerValue, powerMax, (initial == "true" and true or false))
+		ZO_StatusBar_SmoothTransition(window[i].healthbar, powerValue, powerMax, (powerEffectiveMax == "true" and true or false))
 	end
 end
 
@@ -427,10 +493,10 @@ end
 
 local function UpdatePetStats(unitTag)
 	local i = GetKeyWithData(unitTag)
-	if i == nil or i > 2 then
-		--ChatOutput(string.format("UpdatePetStats() unitTag: %s - pet not active", unitTag))
+    if i == nil or i > #window then
 		return
-	end
+    end
+
 	local name = currentPets[i].unitName
 	local control = window[i].label
 	if GetControlText(control) ~= name then
@@ -454,6 +520,12 @@ local function GetActivePets()
 			UpdatePetStats(unitTag)
 		end
 	end
+
+    if savedVars.showCompanion and HasActiveCompanion() and DoesUnitExist(UNIT_COMPANION) then
+        table.insert(currentPets, { unitTag = UNIT_COMPANION, unitName = zo_strformat("<<1>>", GetCompanionName(GetActiveCompanionDefId())) })
+        UpdatePetStats(UNIT_COMPANION)
+    end
+
 	-- update
 	zo_callLater(function() RefreshPetWindow() end, 300)
 end
@@ -465,6 +537,7 @@ local function OnPlayerCombatState(_, inCombat)
 	--[[
 	Setzt den Kampfstatus: in Kampf oder ausserhalb Kampf.
 	]]
+
 	inCombatAddon = inCombat
 	-- debug
 	--ChatOutput(string.format("OnPlayerCombatState() inCombat: %s, inCombatAddon: %s", tostring(inCombat), tostring(inCombatAddon)))
@@ -512,7 +585,7 @@ local function CreateWarner()
 						self.warnAnimation:Stop()
 					end
 				else
-					local current, max = GetUnitPower("player", POWERTYPE_HEALTH)
+					local current, max = GetUnitPower(UNIT_PLAYER_TAG, POWERTYPE_HEALTH)
 					self.warning:SetAlpha(0)
 					self:UpdateAlphaPulse(current / max)
 				end
@@ -597,7 +670,7 @@ local function CreateControls()
 	-- PET BARS --
 	--------------
 	if (not savedVars.useZosStyle) then
-		for i=1,2 do
+		for i=1,3 do
 			-- frame
 			window[i], ctrl = AddControl(base, CT_BACKDROP, 5)
 			ctrl:SetDimensions(baseWidth*0.8, 36)
@@ -653,7 +726,8 @@ local function CreateControls()
 		end
 
 		window[1]:SetAnchor(TOP, base, TOP, 0, 18)
-		window[2]:SetAnchor(TOP, window[1], BOTTOM, 0, 2)
+        window[2]:SetAnchor(TOP, window[1], BOTTOM, 0, 2)
+		window[3]:SetAnchor(TOP, window[2], BOTTOM, 0, 2)
 	else
 		local CHILD_DIRECTIONS = { "Left", "Right", "Center" }
 
@@ -738,7 +812,7 @@ local function CreateControls()
 			end
 		end
 		
-		for i=1,2 do
+		for i=1,3 do
 			window[i] = WINDOW_MANAGER:CreateControlFromVirtual("PetHealth"..i, base, "PetHealth_ZOSStyleBar")
 
 			-- label
@@ -773,7 +847,8 @@ local function CreateControls()
 		end
 
 		window[1]:SetAnchor(TOP, base, TOP, 0, 18)
-		window[2]:SetAnchor(TOP, window[1], BOTTOM, 0, 20)	
+        window[2]:SetAnchor(TOP, window[1], BOTTOM, 0, 20)  
+		window[3]:SetAnchor(TOP, window[2], BOTTOM, 0, 20)	
 	end
 
 	-----------
@@ -785,48 +860,94 @@ local function CreateControls()
 	PET_BAR_FRAGMENT:SetHiddenForReason("NoPetOrOnlyInCombat", true)
 end
 
+local function OnUnitDestroyed(eventCode, unitTag)
+    PetUnSummonedAlerts(unitTag)
+    local key = GetKeyWithData(unitTag)
+    if key ~= nil then
+        table.remove(currentPets, key)
+        -- debug
+        --ChatOutput(string.format("%s destroyed", unitTag))
+        -- refresh
+        local countPets = #currentPets
+        if countPets > 0 then
+            for i = 1, countPets do
+                local name = currentPets[i].unitName
+                local control = window[i].label
+                unitTag = currentPets[i].unitTag
+                if GetControlText(control) ~= name then
+                    window[i].label:SetText(name)
+                end
+                GetHealth(unitTag)
+                GetShield(unitTag)
+            end
+        end
+        RefreshPetWindow()
+    end
+end
+
+local function OnUnitCreated(eventCode, unitTag)
+    if IsUnitValidPet(unitTag) or unitTag == UNIT_COMPANION then
+        GetActivePets()
+    end
+end
+
+local INACTIVE_COMPANION_STATES =
+{
+    [COMPANION_STATE_INACTIVE] = true,
+    [COMPANION_STATE_BLOCKED_PERMANENT] = true,
+    [COMPANION_STATE_BLOCKED_TEMPORARY] = true,
+    [COMPANION_STATE_HIDDEN] = true,
+    [COMPANION_STATE_INITIALIZING] = true,
+}
+
+local PENDING_COMPANION_STATES = 
+{
+    [COMPANION_STATE_PENDING] = true,
+    [COMPANION_STATE_INITIALIZED_PENDING] = true,
+}
+
+local ACTIVE_COMPANION_STATES =
+{
+    [COMPANION_STATE_ACTIVE] = true,
+}
+
+local function OnCompanionStateChanged(eventCode, newState, oldState)
+
+    if savedVars.showCompanion ~= true then
+        return
+    end
+
+    if INACTIVE_COMPANION_STATES[newState] then
+        OnUnitDestroyed(eventCode, UNIT_COMPANION)
+    elseif PENDING_COMPANION_STATES[newState] then
+        -- Could display pending...
+    elseif ACTIVE_COMPANION_STATES[newState] then
+        OnUnitCreated(eventCode, UNIT_COMPANION)
+    else
+        --internalassert(false, "Unhandled companion state")
+    end
+end
+
 ----------
 -- INIT --
 ----------
 local function LoadEvents()
 	-- events
 	EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_POWER_UPDATE, OnHealthUpdate)
-	EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_UNIT_CREATED, function(_, unitTag)
-		if IsUnitValidPet(unitTag) then
-			GetActivePets()
-		end
-	end)
-	EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_UNIT_DESTROYED, function(_, unitTag)
-		PetUnSummonedAlerts(unitTag)
-		local key = GetKeyWithData(unitTag)
-		if key ~= nil then
-			table.remove(currentPets, key)
-			-- debug
-			--ChatOutput(string.format("%s destroyed", unitTag))
-			-- refresh
-			local countPets = #currentPets
-			if countPets > 0 then
-				for i = 1, countPets do
-					local name = currentPets[i].unitName
-					local control = window[i].label
-					unitTag = currentPets[i].unitTag
-					if GetControlText(control) ~= name then
-						window[i].label:SetText(name)
-					end
-					GetHealth(unitTag)
-					GetShield(unitTag)
-				end
-			end
-			RefreshPetWindow()
-		end
-	end)
+	EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_ACTIVE_COMPANION_STATE_CHANGED, OnCompanionStateChanged)
+	
+
+	EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_UNIT_CREATED, OnUnitCreated)
+	EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_UNIT_DESTROYED, OnUnitDestroyed)
+
 	EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_PLAYER_DEAD, GetActivePets)
 	EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_UNIT_DEATH_STATE_CHANGE, GetActivePets)
 	EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_ACTION_SLOT_ABILITY_SLOTTED, GetActivePets)
 	-- event filters
-	EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_POWER_UPDATE, REGISTER_FILTER_UNIT_TAG_PREFIX, UNIT_PLAYER_PET)
-	EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_UNIT_CREATED, REGISTER_FILTER_UNIT_TAG_PREFIX, UNIT_PLAYER_PET)
-	EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_UNIT_DESTROYED, REGISTER_FILTER_UNIT_TAG_PREFIX, UNIT_PLAYER_PET)
+	EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_POWER_UPDATE, REGISTER_FILTER_UNIT_TAG_PREFIX, UNIT_PLAYER_PET, UNIT_COMPANION)
+	EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_UNIT_CREATED, REGISTER_FILTER_UNIT_TAG_PREFIX, UNIT_PLAYER_PET, UNIT_COMPANION)
+	EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_UNIT_DESTROYED, REGISTER_FILTER_UNIT_TAG_PREFIX, UNIT_PLAYER_PET, UNIT_COMPANION)
+
 	EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_PLAYER_DEAD, REGISTER_FILTER_UNIT_TAG, UNIT_PLAYER_TAG)
 	EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_UNIT_DEATH_STATE_CHANGE, REGISTER_FILTER_UNIT_TAG, UNIT_PLAYER_TAG)
 	-- shield
@@ -846,9 +967,9 @@ local function LoadEvents()
 		end
 	end)
 	-- shield filters
-	EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_UNIT_ATTRIBUTE_VISUAL_ADDED, REGISTER_FILTER_UNIT_TAG_PREFIX, UNIT_PLAYER_PET)
-	EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_UNIT_ATTRIBUTE_VISUAL_REMOVED, REGISTER_FILTER_UNIT_TAG_PREFIX, UNIT_PLAYER_PET)
-	EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_UNIT_ATTRIBUTE_VISUAL_UPDATED, REGISTER_FILTER_UNIT_TAG_PREFIX, UNIT_PLAYER_PET)
+	EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_UNIT_ATTRIBUTE_VISUAL_ADDED, REGISTER_FILTER_UNIT_TAG_PREFIX, UNIT_PLAYER_PET, UNIT_COMPANION)
+	EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_UNIT_ATTRIBUTE_VISUAL_REMOVED, REGISTER_FILTER_UNIT_TAG_PREFIX, UNIT_PLAYER_PET, UNIT_COMPANION)
+	EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_UNIT_ATTRIBUTE_VISUAL_UPDATED, REGISTER_FILTER_UNIT_TAG_PREFIX, UNIT_PLAYER_PET, UNIT_COMPANION)
 	-- for changes the style of the values
 	EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_INTERFACE_SETTING_CHANGED, GetActivePets)
 	EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_INTERFACE_SETTING_CHANGED, REGISTER_FILTER_SETTING_SYSTEM_TYPE, SETTING_TYPE_UI)
@@ -873,7 +994,7 @@ function PetHealth.changeBackground(toValue)
 end
 
 function PetHealth.changeValues(toValue)
-	for i=1,2 do
+	for i=1,3 do
 		-- local alpha = GetAlphaFromControl(savedVars.showValues)
 		-- d(alpha)
 		window[i].values:SetAlpha(GetAlphaFromControl(toValue))
@@ -881,9 +1002,14 @@ function PetHealth.changeValues(toValue)
 end
 
 function PetHealth.changeLabels(toValue)
-	for i=1,2 do
+	for i=1,3 do
 		window[i].label:SetAlpha(GetAlphaFromControl(toValue))
 	end
+end
+
+function PetHealth.changeCompanion(toValue)
+    savedVars.showCompanion = toValue
+    GetActivePets()
 end
 
 function PetHealth.lockPetWindow(toValue)

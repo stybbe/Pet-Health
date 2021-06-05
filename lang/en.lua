@@ -59,6 +59,8 @@ local strings = {
 	SI_PET_HEALTH_LAM_USE_ZOS_STYLE_TT = "Use the arrow status bars instead of the rectangular ones",
 	SI_PET_HEALTH_LAM_HIDE_IN_DUNGEON = "Hide in group dungeon",
 	SI_PET_HEALTH_LAM_HIDE_IN_DUNGEON_TT = "Hide PetHealth window while inside a group dungeon - Pets no longer take damage in group dungeons",
+	SI_PET_HEALTH_LAM_COMPANION			= 'Show companion',
+	SI_PET_HEALTH_LAM_COMPANION_TT		= 'Show the companion in the PetHealth window',
 }
 
 for stringId, stringValue in pairs(strings) do

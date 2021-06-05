@@ -56,4 +56,6 @@ SafeAddString(SI_PET_HEALTH_LAM_ONLY_IN_COMBAT_TT,          "Zeiogt die PetHealt
 SafeAddString(SI_PET_HEALTH_LAM_ONLY_IN_COMBAT_HEALTH, 		"Gesundheitsprozentsatz, der nur in einer Kampfeinstellung aktiviert werden kann")
 SafeAddString(SI_PET_HEALTH_LAM_ONLY_IN_COMBAT_HEALTH_TT,	"Zeigen Sie die PetHealth-Benutzeroberfläche nur dann, wenn Sie sich im Kampf befinden und ein Haustier den Gesundheits-Prozentsatz erreicht oder unterschreitet")
 SafeAddString(SI_PET_HEALTH_LAM_HIDE_IN_DUNGEON, 		"Verstecke dich im Gruppenkerker")
-SafeAddString(SI_PET_HEALTH_LAM_HIDE_IN_DUNGEON_TT,	"PetHealth-Fenster in einem Gruppen-Dungeon ausblenden - Haustiere erleiden in Gruppen-Dungeons keinen Schaden mehr")
+SafeAddString(SI_PET_HEALTH_LAM_HIDE_IN_DUNGEON_TT, "PetHealth-Fenster in einem Gruppen-Dungeon ausblenden - Haustiere erleiden in Gruppen-Dungeons keinen Schaden mehr")
+SafeAddString(SI_PET_HEALTH_LAM_COMPANION, "Begleiter anzeigen")
+SafeAddString(SI_PET_HEALTH_LAM_COMPANION_TT,	"Den Begleiter im PetHealth-Fenster anzeigen")

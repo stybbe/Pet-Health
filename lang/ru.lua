@@ -59,6 +59,8 @@ local strings = {
 	SI_PET_HEALTH_LAM_USE_ZOS_STYLE_TT = "Используйте стрелки состояния вместо прямоугольных",
 	SI_PET_HEALTH_LAM_HIDE_IN_DUNGEON = "Спрятаться в групповой темнице",
 	SI_PET_HEALTH_LAM_HIDE_IN_DUNGEON_TT = "Скройте окно PetHealth в групповом подземелье - домашние животные больше не получают урон в групповых подземельях",
+	SI_PET_HEALTH_LAM_COMPANION = "Показать собеседника",
+	SI_PET_HEALTH_LAM_COMPANION_TT = "Показать компаньона в окне PetHealth",
 }
 
 for stringId, stringValue in pairs(strings) do
