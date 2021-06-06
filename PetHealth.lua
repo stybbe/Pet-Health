@@ -1176,7 +1176,7 @@ local function OnAddOnLoaded(_, addonName)
 	-- Addon is only enabled for the classIds which are given with the value true in the table PetHealth.supportedClasses
 	local getUnitClassId = GetUnitClassId(UNIT_PLAYER_TAG)
 	local supportedClasses = PetHealth.supportedClasses
-	local supportedClass = supportedClasses[getUnitClassId] or false
+	local supportedClass = supportedClasses[getUnitClassId] or savedVars.showCompanion
 	if not supportedClass then
 		-- debug
 		ChatOutput("[PetHealth] " .. GetString(SI_PET_HEALTH_CLASS))
