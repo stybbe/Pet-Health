@@ -932,52 +932,68 @@ end
 -- INIT --
 ----------
 local function LoadEvents()
-	-- events
-	EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_POWER_UPDATE, OnHealthUpdate)
-	EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_ACTIVE_COMPANION_STATE_CHANGED, OnCompanionStateChanged)
-	
+    -- events
 
-	EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_UNIT_CREATED, OnUnitCreated)
-	EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_UNIT_DESTROYED, OnUnitDestroyed)
+    EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_ACTIVE_COMPANION_STATE_CHANGED, OnCompanionStateChanged)
+    
+    --pet
+    EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_POWER_UPDATE, OnHealthUpdate)
+    EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_UNIT_CREATED, OnUnitCreated)
+    EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_UNIT_DESTROYED, OnUnitDestroyed)
 
-	EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_PLAYER_DEAD, GetActivePets)
-	EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_UNIT_DEATH_STATE_CHANGE, GetActivePets)
-	EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_ACTION_SLOT_ABILITY_SLOTTED, GetActivePets)
-	-- event filters
-	EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_POWER_UPDATE, REGISTER_FILTER_UNIT_TAG_PREFIX, UNIT_PLAYER_PET, UNIT_COMPANION)
-	EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_UNIT_CREATED, REGISTER_FILTER_UNIT_TAG_PREFIX, UNIT_PLAYER_PET, UNIT_COMPANION)
-	EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_UNIT_DESTROYED, REGISTER_FILTER_UNIT_TAG_PREFIX, UNIT_PLAYER_PET, UNIT_COMPANION)
+    EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_POWER_UPDATE, REGISTER_FILTER_UNIT_TAG_PREFIX, UNIT_PLAYER_PET)
+    EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_UNIT_CREATED, REGISTER_FILTER_UNIT_TAG_PREFIX, UNIT_PLAYER_PET)
+    EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_UNIT_DESTROYED, REGISTER_FILTER_UNIT_TAG_PREFIX, UNIT_PLAYER_PET)
 
-	EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_PLAYER_DEAD, REGISTER_FILTER_UNIT_TAG, UNIT_PLAYER_TAG)
-	EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_UNIT_DEATH_STATE_CHANGE, REGISTER_FILTER_UNIT_TAG, UNIT_PLAYER_TAG)
-	-- shield
-	EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_UNIT_ATTRIBUTE_VISUAL_ADDED, function(_, unitTag, unitAttributeVisual, _, _, _, value, maxValue)
-		if unitAttributeVisual == ATTRIBUTE_VISUAL_POWER_SHIELDING then
-			OnShieldUpdate(nil, unitTag, value, maxValue, "true")
-		end
-	end)
-	EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_UNIT_ATTRIBUTE_VISUAL_REMOVED, function(_, unitTag, unitAttributeVisual, _, _, _, value, maxValue)
-		if unitAttributeVisual == ATTRIBUTE_VISUAL_POWER_SHIELDING then
-			OnShieldUpdate("removed", unitTag, value, maxValue, "false")
-		end
-	end)
-	EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_UNIT_ATTRIBUTE_VISUAL_UPDATED, function(_, unitTag, unitAttributeVisual, _, _, _, _, newValue, _, newMaxValue)
-		if unitAttributeVisual == ATTRIBUTE_VISUAL_POWER_SHIELDING then
-			OnShieldUpdate(nil, unitTag, newValue, newMaxValue, "false")
-		end
-	end)
-	-- shield filters
-	EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_UNIT_ATTRIBUTE_VISUAL_ADDED, REGISTER_FILTER_UNIT_TAG_PREFIX, UNIT_PLAYER_PET, UNIT_COMPANION)
-	EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_UNIT_ATTRIBUTE_VISUAL_REMOVED, REGISTER_FILTER_UNIT_TAG_PREFIX, UNIT_PLAYER_PET, UNIT_COMPANION)
-	EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_UNIT_ATTRIBUTE_VISUAL_UPDATED, REGISTER_FILTER_UNIT_TAG_PREFIX, UNIT_PLAYER_PET, UNIT_COMPANION)
-	-- for changes the style of the values
-	EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_INTERFACE_SETTING_CHANGED, GetActivePets)
-	EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_INTERFACE_SETTING_CHANGED, REGISTER_FILTER_SETTING_SYSTEM_TYPE, SETTING_TYPE_UI)
-	-- handles the in combat stuff
-	EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_PLAYER_COMBAT_STATE, OnPlayerCombatState)
-	OnPlayerCombatState(_, IsUnitInCombat(UNIT_PLAYER_TAG))
-	-- zone changes
-	EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_PLAYER_ACTIVATED, function() zo_callLater(function() GetActivePets() end, 75) end)
+    EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_UNIT_ATTRIBUTE_VISUAL_ADDED, REGISTER_FILTER_UNIT_TAG, UNIT_PLAYER_PET)
+    EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_UNIT_ATTRIBUTE_VISUAL_REMOVED, REGISTER_FILTER_UNIT_TAG, UNIT_PLAYER_PET)
+    EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_UNIT_ATTRIBUTE_VISUAL_UPDATED, REGISTER_FILTER_UNIT_TAG, UNIT_PLAYER_PET)
+
+    --companion
+    EVENT_MANAGER:RegisterForEvent(addon.name .. UNIT_COMPANION, EVENT_POWER_UPDATE, OnHealthUpdate)
+    EVENT_MANAGER:RegisterForEvent(addon.name .. UNIT_COMPANION, EVENT_UNIT_CREATED, OnUnitCreated)
+    EVENT_MANAGER:RegisterForEvent(addon.name .. UNIT_COMPANION, EVENT_UNIT_DESTROYED, OnUnitDestroyed)
+
+    EVENT_MANAGER:AddFilterForEvent(addon.name .. UNIT_COMPANION, EVENT_POWER_UPDATE, REGISTER_FILTER_UNIT_TAG_PREFIX, UNIT_COMPANION)
+    EVENT_MANAGER:AddFilterForEvent(addon.name .. UNIT_COMPANION, EVENT_UNIT_CREATED, REGISTER_FILTER_UNIT_TAG_PREFIX, UNIT_COMPANION)
+    EVENT_MANAGER:AddFilterForEvent(addon.name .. UNIT_COMPANION, EVENT_UNIT_DESTROYED, REGISTER_FILTER_UNIT_TAG_PREFIX, UNIT_COMPANION)
+
+    EVENT_MANAGER:AddFilterForEvent(addon.name .. UNIT_COMPANION, EVENT_UNIT_ATTRIBUTE_VISUAL_ADDED, REGISTER_FILTER_UNIT_TAG, UNIT_COMPANION)
+    EVENT_MANAGER:AddFilterForEvent(addon.name .. UNIT_COMPANION, EVENT_UNIT_ATTRIBUTE_VISUAL_REMOVED, REGISTER_FILTER_UNIT_TAG, UNIT_COMPANION)
+    EVENT_MANAGER:AddFilterForEvent(addon.name .. UNIT_COMPANION, EVENT_UNIT_ATTRIBUTE_VISUAL_UPDATED, REGISTER_FILTER_UNIT_TAG, UNIT_COMPANION)
+
+    EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_PLAYER_DEAD, GetActivePets)
+    EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_UNIT_DEATH_STATE_CHANGE, GetActivePets)
+    EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_ACTION_SLOT_ABILITY_SLOTTED, GetActivePets)
+
+    EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_PLAYER_DEAD, REGISTER_FILTER_UNIT_TAG, UNIT_PLAYER_TAG)
+    EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_UNIT_DEATH_STATE_CHANGE, REGISTER_FILTER_UNIT_TAG, UNIT_PLAYER_TAG)
+    -- shield
+    EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_UNIT_ATTRIBUTE_VISUAL_ADDED, function(_, unitTag, unitAttributeVisual, _, _, _, value, maxValue)
+        if unitAttributeVisual == ATTRIBUTE_VISUAL_POWER_SHIELDING then
+            OnShieldUpdate(nil, unitTag, value, maxValue, "true")
+        end
+    end)
+    EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_UNIT_ATTRIBUTE_VISUAL_REMOVED, function(_, unitTag, unitAttributeVisual, _, _, _, value, maxValue)
+        if unitAttributeVisual == ATTRIBUTE_VISUAL_POWER_SHIELDING then
+            OnShieldUpdate("removed", unitTag, value, maxValue, "false")
+        end
+    end)
+    EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_UNIT_ATTRIBUTE_VISUAL_UPDATED, function(_, unitTag, unitAttributeVisual, _, _, _, _, newValue, _, newMaxValue)
+        if unitAttributeVisual == ATTRIBUTE_VISUAL_POWER_SHIELDING then
+            OnShieldUpdate(nil, unitTag, newValue, newMaxValue, "false")
+        end
+    end)
+
+
+    -- for changes the style of the values
+    EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_INTERFACE_SETTING_CHANGED, GetActivePets)
+    EVENT_MANAGER:AddFilterForEvent(addon.name, EVENT_INTERFACE_SETTING_CHANGED, REGISTER_FILTER_SETTING_SYSTEM_TYPE, SETTING_TYPE_UI)
+    -- handles the in combat stuff
+    EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_PLAYER_COMBAT_STATE, OnPlayerCombatState)
+    OnPlayerCombatState(_, IsUnitInCombat(UNIT_PLAYER_TAG))
+    -- zone changes
+    EVENT_MANAGER:RegisterForEvent(addon.name, EVENT_PLAYER_ACTIVATED, function() zo_callLater(function() GetActivePets() end, 75) end)
 end
 
 function PetHealth.changeCombatState()
